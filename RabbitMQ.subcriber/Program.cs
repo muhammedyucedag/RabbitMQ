@@ -17,7 +17,7 @@ public class Program
 
         var factory = new ConnectionFactory()
         {
-            Uri = new Uri(amqpUrl)
+            Uri = !string.IsNullOrEmpty(amqpUrl) ? new Uri(amqpUrl) : null
         };
 
         // RabbitMQ serverına bağlanma
@@ -36,22 +36,38 @@ public class Program
                 //True dersek her subscriber'e bölüştürür mesajları.
                 //False dersek her subscriber'e 1 1 1 dağıtacak.
 
-                channel.BasicQos(0, 1, false);
+                //Random kuyruk oluşturma
 
+                var randomQueueName = channel.QueueDeclare().QueueName;
+
+                // Fanout exchange ile kuyruğu bağla
+                channel.QueueBind(randomQueueName, "logs-fanout", "", null);
+
+                // Ön yükleme ayarını yap
+                channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+
+                int sleepTime = args.Length > 0 ? int.Parse(args[0]) : 1;
+                Console.WriteLine("Waiting for messages. Sleep time : {0} sec", sleepTime);
+
+                // Tüketici oluştur
                 var consumer = new EventingBasicConsumer(channel);
 
-                //False ile silme işlemini hemen yapmıyoruz. BasicAck() ile ulaşan mesajı sileceğiz
-                channel.BasicConsume("hello-queue", false, consumer);
+                // False ile silme işlemini hemen yapmıyoruz. BasicAck() ile ulaşan mesajı sileceğiz
+                // Kuyruktan mesajları al
+                channel.BasicConsume(randomQueueName, false, consumer);
 
-                consumer.Received += (object sender, BasicDeliverEventArgs e) =>
+                Console.WriteLine("Log dinleniyor");
+
+                consumer.Received += (model, ea) =>
                 {
-                    var message = Encoding.UTF8.GetString(e.Body.ToArray());
-                    Thread.Sleep(1000);
-                    Console.WriteLine("Gelen Mesaj:" + message);
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
 
-                    // Mesaj başarıyla işlendiğinde kuyruktan sil
-                    channel.BasicAck(e.DeliveryTag, false);
-                
+                    Console.WriteLine($"Received: {message}");
+
+                    Thread.Sleep(sleepTime * 1000);
+
+                    channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
                 };
             }
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 using System.Text;
+using System.Threading.Channels;
 
 public class Program
 {
@@ -26,23 +27,22 @@ public class Program
             Console.WriteLine("RabbitMQ serverına bağlanıldı.");
             Console.WriteLine("Bağlantı URL'si: " + amqpUrl);
 
+
             // RabbitMQ kanal üzerinden bağlanma
             using (var channel = connection.CreateModel())
             {
-                // Kuyruk Oluşturma
-                channel.QueueDeclare("hello-queue", true, false, false);
+                //channel.QueueDeclare("hello-queue", true, false, false);
+                channel.ExchangeDeclare("logs-fanout", durable: true, type: ExchangeType.Fanout);
 
                 Enumerable.Range(1, 50).ToList().ForEach(x =>
                 {
-                    string message = $"Message {x}";
+                    string message = $"Log {x}";
 
-                    // Mesajı Byte halinde alıyoruz
                     var messageBody = Encoding.UTF8.GetBytes(message);
 
-                    channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
+                    channel.BasicPublish("logs-fanout", "", null, messageBody);
 
-                    Console.WriteLine($"Mesaj Gönderilmiştir : {message}");
-
+                    Console.WriteLine($"Message: {message}");
                 });
             }
         }
