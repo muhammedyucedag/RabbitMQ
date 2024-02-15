@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 using System.Text;
-using System.Threading.Channels;
 
-public class Program
+class Program
 {
-    public static void Main(string[] args)
+    static void Main(string[] args)
     {
         var builder = new ConfigurationBuilder();
         builder.SetBasePath(Directory.GetCurrentDirectory())
@@ -17,35 +16,26 @@ public class Program
 
         var factory = new ConnectionFactory()
         {
-            Uri = new Uri(amqpUrl)
+            Uri = !string.IsNullOrEmpty(amqpUrl) ? new Uri(amqpUrl) : null
         };
 
-        // RabbitMQ serverına bağlanma
-        using (var connection = factory.CreateConnection())
+        using var connection = factory.CreateConnection();
+
+        var channel = connection.CreateModel();
+
+        channel.QueueDeclare("hello-queue", true, false, false);
+
+        Enumerable.Range(1, 50).ToList().ForEach(x =>
         {
-            // Bağlantı kurulduğunda yapılabilecek işlemler burada gerçekleştirilir
-            Console.WriteLine("RabbitMQ serverına bağlanıldı.");
-            Console.WriteLine("Bağlantı URL'si: " + amqpUrl);
+            string message = $"Message {x}";
 
+            var messageBody = Encoding.UTF8.GetBytes(message);
 
-            // RabbitMQ kanal üzerinden bağlanma
-            using (var channel = connection.CreateModel())
-            {
-                //channel.QueueDeclare("hello-queue", true, false, false);
-                channel.ExchangeDeclare("logs-fanout", durable: true, type: ExchangeType.Fanout);
+            channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
 
-                Enumerable.Range(1, 50).ToList().ForEach(x =>
-                {
-                    string message = $"Log {x}";
+            Console.WriteLine($"Mesaj gönderilmiştir : {message}");
 
-                    var messageBody = Encoding.UTF8.GetBytes(message);
-
-                    channel.BasicPublish("logs-fanout", "", null, messageBody);
-
-                    Console.WriteLine($"Message: {message}");
-                });
-            }
-        }
+        });
 
         Console.ReadLine();
     }
