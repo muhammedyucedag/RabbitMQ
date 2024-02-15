@@ -30,16 +30,20 @@ public class Program
             using (var channel = connection.CreateModel())
             {
                 // Kuyruk Oluşturma
-                channel.QueueDeclare("hello-queue", true, false, true);
+                channel.QueueDeclare("hello-queue", true, false, false);
 
-                string message = "Hello World RabbitMQ";
+                Enumerable.Range(1, 50).ToList().ForEach(x =>
+                {
+                    string message = $"Message {x}";
 
-                // Mesajı Byte halinde alıyoruz
-                var messageBody = Encoding.UTF8.GetBytes(message);
+                    // Mesajı Byte halinde alıyoruz
+                    var messageBody = Encoding.UTF8.GetBytes(message);
 
-                channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
+                    channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
 
-                Console.WriteLine("Mesaj Gönderilmiştir.");
+                    Console.WriteLine($"Mesaj Gönderilmiştir : {message}");
+
+                });
             }
         }
 

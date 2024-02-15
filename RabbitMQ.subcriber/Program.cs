@@ -31,17 +31,27 @@ public class Program
             using (var channel = connection.CreateModel())
             {
                 // Kuyruk Oluşturma
-                channel.QueueDeclare("hello-queue", true, false, true);
+                //channel.QueueDeclare("hello-queue", true, false, true);
+
+                //True dersek her subscriber'e bölüştürür mesajları.
+                //False dersek her subscriber'e 1 1 1 dağıtacak.
+
+                channel.BasicQos(0, 1, false);
 
                 var consumer = new EventingBasicConsumer(channel);
-                
-                channel.BasicConsume("hello-queue", true, consumer);
+
+                //False ile silme işlemini hemen yapmıyoruz. BasicAck() ile ulaşan mesajı sileceğiz
+                channel.BasicConsume("hello-queue", false, consumer);
 
                 consumer.Received += (object sender, BasicDeliverEventArgs e) =>
                 {
                     var message = Encoding.UTF8.GetString(e.Body.ToArray());
-
+                    Thread.Sleep(1000);
                     Console.WriteLine("Gelen Mesaj:" + message);
+
+                    // Mesaj başarıyla işlendiğinde kuyruktan sil
+                    channel.BasicAck(e.DeliveryTag, false);
+                
                 };
             }
 
