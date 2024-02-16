@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Shared;
 using System.Text;
+using System.Text.Json;
 
 class Program
 {
@@ -51,8 +53,10 @@ class Program
         {
             var message = Encoding.UTF8.GetString(e.Body.ToArray());
 
+            Product product = JsonSerializer.Deserialize<Product>(message);
+
             Thread.Sleep(1000);
-            Console.WriteLine("Gelen Mesaj:" + message);
+            Console.WriteLine($"Gelen Mesaj: + {product.Id}-{product.Name}-{product.Price}-{product.Stock}");
 
 
             channel.BasicAck(e.DeliveryTag, false);

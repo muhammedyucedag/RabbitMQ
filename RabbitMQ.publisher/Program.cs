@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
+using Shared;
 using System;
 using System.Text;
+using System.Text.Json;
 
 
 public enum LogNames
@@ -44,7 +46,17 @@ class Program
         properties.Headers = headers;
         properties.Persistent = true; // Mesajlar kalıcı hale gelecektir.
 
-        channel.BasicPublish("header-exchange", string.Empty, properties, Encoding.UTF8.GetBytes("Header Mesajım"));
+        var product = new Product
+        {
+            Id = Guid.NewGuid(),
+            Name = "Pencil",
+            Price = 100,
+            Stock = 20
+        };
+
+        var productJsonString = JsonSerializer.Serialize(product);
+
+        channel.BasicPublish("header-exchange", string.Empty, properties, Encoding.UTF8.GetBytes(productJsonString));
 
         Console.WriteLine("Mesaj gönderilmiştir.");
 
