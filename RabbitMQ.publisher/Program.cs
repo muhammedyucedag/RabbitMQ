@@ -33,26 +33,19 @@ class Program
 
         var channel = connection.CreateModel();
 
-        channel.ExchangeDeclare("logs-topic", durable: true, type: ExchangeType.Topic);
+        channel.ExchangeDeclare("header-exchange", durable: true, type: ExchangeType.Headers);
 
+        Dictionary<string,object> headers = new Dictionary<string, object>();
 
-        Random random = new Random();
-        Enumerable.Range(1, 50).ToList().ForEach(x =>
-        {
-            LogNames logName1 = (LogNames)random.Next(1, 5);
-            LogNames logName2 = (LogNames)random.Next(1, 5);
-            LogNames logName3 = (LogNames)random.Next(1, 5);
+        headers.Add("format", "pdf");
+        headers.Add("shape", "a4");
 
-            var routeKey = $"{logName1}.{logName2}.{logName3}";
+        var properties = channel.CreateBasicProperties();
+        properties.Headers = headers;
 
-            string message = $"log-type: {logName1}-{logName2}-{logName3}";
+        channel.BasicPublish("header-exchange", string.Empty, properties, Encoding.UTF8.GetBytes("Header Mesajım"));
 
-            var messageBody = Encoding.UTF8.GetBytes(message);
-
-            channel.BasicPublish("logs-direct", routeKey, null, messageBody);
-
-            Console.WriteLine($"Log gönderilmiştir : {message}");
-        });
+        Console.WriteLine("Mesaj gönderilmiştir.");
 
         Console.ReadLine();
     }

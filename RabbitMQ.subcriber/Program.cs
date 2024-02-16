@@ -26,15 +26,22 @@ class Program
         Console.WriteLine("Bağlantı URL'si: " + amqpUrl);
 
         var channel = connection.CreateModel();
+        channel.ExchangeDeclare("header-exchange", durable: true, type: ExchangeType.Headers);
+
 
         channel.BasicQos(0, 1, false);
         var consumer = new EventingBasicConsumer(channel);
 
         var queueName = channel.QueueDeclare().QueueName;
 
-        var routekey = "Information.#";
+        Dictionary<string, object> headers = new Dictionary<string, object>();
 
-        channel.QueueBind(queueName, "logs-topic", routekey);
+        headers.Add("format", "pdf");
+        headers.Add("shape", "a4");
+        headers.Add("x-match", "all");
+
+
+        channel.QueueBind(queueName, "header-exchange", String.Empty, headers);
 
         channel.BasicConsume(queueName, false, consumer);
 
@@ -47,7 +54,6 @@ class Program
             Thread.Sleep(1000);
             Console.WriteLine("Gelen Mesaj:" + message);
 
-            //File.AppendAllText("direct-queue-Critical.txt", message + "\n");
 
             channel.BasicAck(e.DeliveryTag, false);
         };
