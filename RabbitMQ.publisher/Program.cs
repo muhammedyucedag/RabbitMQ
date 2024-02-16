@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
+using System;
 using System.Text;
 
 
@@ -32,32 +33,25 @@ class Program
 
         var channel = connection.CreateModel();
 
-        channel.ExchangeDeclare("logs-direct", durable: true, type: ExchangeType.Direct);
+        channel.ExchangeDeclare("logs-topic", durable: true, type: ExchangeType.Topic);
 
-        Enum.GetNames(typeof(LogNames)).ToList().ForEach(name =>
-        {
-            var routeKey = $"route-{name}";
 
-            var queueName = $"direct-queue-{name}";
-            channel.QueueDeclare(queueName, true, false, false);
-
-            channel.QueueBind(queueName, "logs-direct", routeKey, null);
-        });
-
+        Random random = new Random();
         Enumerable.Range(1, 50).ToList().ForEach(x =>
         {
-            LogNames log = (LogNames)new Random().Next(1, 5);
+            LogNames logName1 = (LogNames)random.Next(1, 5);
+            LogNames logName2 = (LogNames)random.Next(1, 5);
+            LogNames logName3 = (LogNames)random.Next(1, 5);
 
-            string message = $"log-type: {log}";
+            var routeKey = $"{logName1}.{logName2}.{logName3}";
+
+            string message = $"log-type: {logName1}-{logName2}-{logName3}";
 
             var messageBody = Encoding.UTF8.GetBytes(message);
-
-            var routeKey = $"route-{log}";
 
             channel.BasicPublish("logs-direct", routeKey, null, messageBody);
 
             Console.WriteLine($"Log gönderilmiştir : {message}");
-
         });
 
         Console.ReadLine();

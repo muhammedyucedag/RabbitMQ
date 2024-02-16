@@ -30,12 +30,15 @@ class Program
         channel.BasicQos(0, 1, false);
         var consumer = new EventingBasicConsumer(channel);
 
-        var queueName = "direct-queue-Critical";
+        var queueName = channel.QueueDeclare().QueueName;
+
+        var routekey = "Information.#";
+
+        channel.QueueBind(queueName, "logs-topic", routekey);
 
         channel.BasicConsume(queueName, false, consumer);
 
         Console.WriteLine("Loglar dinleniyor.");
-
 
         consumer.Received += (model, e) =>
         {
