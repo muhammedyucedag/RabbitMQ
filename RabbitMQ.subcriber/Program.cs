@@ -27,15 +27,12 @@ class Program
 
         var channel = connection.CreateModel();
 
-        // Kuyruk Oluşturma
-        var randomQueueName = channel.QueueDeclare().QueueName;
-
-        channel.QueueBind(randomQueueName, "logs-fanout", "", null);
-
         channel.BasicQos(0, 1, false);
         var consumer = new EventingBasicConsumer(channel);
 
-        channel.BasicConsume(randomQueueName, false, consumer);
+        var queueName = "direct-queue-Critical";
+
+        channel.BasicConsume(queueName, false, consumer);
 
         Console.WriteLine("Loglar dinleniyor.");
 
@@ -44,8 +41,10 @@ class Program
         {
             var message = Encoding.UTF8.GetString(e.Body.ToArray());
 
-            Thread.Sleep(1500);
+            Thread.Sleep(1000);
             Console.WriteLine("Gelen Mesaj:" + message);
+
+            //File.AppendAllText("direct-queue-Critical.txt", message + "\n");
 
             channel.BasicAck(e.DeliveryTag, false);
         };
