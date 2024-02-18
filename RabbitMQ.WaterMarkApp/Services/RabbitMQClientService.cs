@@ -20,7 +20,6 @@ namespace RabbitMQ.WaterMarkApp.Services
         {
             _connectionFactory = connectionFactory;
             _logger = logger;
-            Connect();
         }
 
         // RabbitMQ sunucusuna bağlanan metot
@@ -30,7 +29,6 @@ namespace RabbitMQ.WaterMarkApp.Services
 
             if (_channel is { IsOpen: true }) // Kanal zaten açıksa mevcut kanalı dön
                 return _channel;
-            return _channel;
 
             _channel = _connection.CreateModel();
 
