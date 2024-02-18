@@ -1,7 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 using RabbitMQ.WaterMarkApp.Models;
+using RabbitMQ.WaterMarkApp.Services;
+using System.CodeDom;
+using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -10,6 +18,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseInMemoryDatabase(databaseName: "product");
 });
+
+
+builder.Services.AddSingleton(sp => 
+new ConnectionFactory() { Uri = new Uri(configuration.GetConnectionString("RabbitMQ")) });
+
+builder.Services.AddSingleton<RabbitMQClientService>();
 
 var app = builder.Build();
 
