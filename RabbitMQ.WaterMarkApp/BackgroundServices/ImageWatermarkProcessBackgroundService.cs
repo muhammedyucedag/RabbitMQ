@@ -54,6 +54,7 @@ namespace RabbitMQ.WaterMarkApp.BackgroundServices
                 var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images",
                     productImageCreatedEvent.ImageName);
 
+
                 var siteName = "www.muhammedyucedag.com";
 
                 using var img = Image.FromFile(path);
