@@ -1,0 +1,35 @@
+﻿@using RabbitMQ.ExcelApp.Entity.User
+
+@{
+    ViewData["Title"] = "Files";
+}
+
+@model List<UserFile>
+
+<h1>Files</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>File Name</th>
+            <th>Created Date</th>
+            <th>File Status</th>
+            <th>Download</th>
+
+        </tr>
+    </thead>
+
+    @foreach(var item in Model)
+    {
+        <tr>
+            <th>@item.FileName</th>
+            <th>@item.GetCreatedDate</th>
+            <th>@item.FileStatus</th>
+            <td>
+                <a href="~/files/@item.FilePath" class="btn btn-primary @(item.FileStatus == FileStatus.Creating ? "disabled" : "")">Download</a>
+            </td>
+
+        </tr>
+    }
+</table>
+
