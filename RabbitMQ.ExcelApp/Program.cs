@@ -31,6 +31,7 @@ internal class Program
         new ConnectionFactory() { Uri = new Uri(configuration.GetConnectionString("RabbitMQ")), DispatchConsumersAsync = true });
 
         builder.Services.AddSingleton<RabbitMQClientService>();
+        builder.Services.AddSingleton<RabbitMQPublisher>();
 
         var app = builder.Build();
 
