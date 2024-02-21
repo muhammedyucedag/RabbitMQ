@@ -10,9 +10,11 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        var configuration = new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        .Build();
+        //var configuration = new ConfigurationBuilder()
+        //.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        //.Build();
+
+        IConfiguration Configuration = builder.Configuration;
 
         // Add services to the container.
         builder.Services.AddControllersWithViews();
@@ -28,7 +30,7 @@ internal class Program
 
 
         builder.Services.AddSingleton(sp =>
-        new ConnectionFactory() { Uri = new Uri(configuration.GetConnectionString("RabbitMQ")), DispatchConsumersAsync = true });
+        new ConnectionFactory() { Uri = new Uri(Configuration.GetConnectionString("RabbitMQ")), DispatchConsumersAsync = true });
 
         builder.Services.AddSingleton<RabbitMQClientService>();
         builder.Services.AddSingleton<RabbitMQPublisher>();
