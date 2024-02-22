@@ -13,16 +13,15 @@ namespace FileCreateWorkerService
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private RabbitMQClientService _rabbitmqClientService;
+        private readonly RabbitMQClientService _rabbitmqClientService;
         private readonly IServiceProvider _serviceProvider;
         private IModel _channel;
 
-        public Worker(ILogger<Worker> logger, RabbitMQClientService rabbitmqClientService, IServiceProvider serviceProvider, IModel channel)
+        public Worker(ILogger<Worker> logger, RabbitMQClientService rabbitmqClientService, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _rabbitmqClientService = rabbitmqClientService;
             _serviceProvider = serviceProvider;
-            _channel = channel;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -37,6 +36,8 @@ namespace FileCreateWorkerService
         {
             var consumer = new AsyncEventingBasicConsumer(_channel);
 
+            _channel.BasicConsume(RabbitMQClientService.QueueName, false, consumer);
+
             consumer.Received += Consumer_Received;
 
             return Task.CompletedTask;
@@ -46,60 +47,71 @@ namespace FileCreateWorkerService
         {
             await Task.Delay(5000);
 
-            var excel = JsonSerializer.Deserialize<CreateExcelMessage>(Encoding.UTF8.GetString(@event.Body.ToArray()));
+
+            var createExcelMessage = JsonSerializer.Deserialize<CreateExcelMessage>(Encoding.UTF8.GetString(@event.Body.ToArray()));
+
 
             using var ms = new MemoryStream();
+
 
             var wb = new XLWorkbook();
             var ds = new DataSet();
             ds.Tables.Add(GetTable("products"));
+          
 
             wb.Worksheets.Add(ds);
             wb.SaveAs(ms);
 
-            MultipartFormDataContent multipartFormDataContent = new();
+            MultipartFormDataContent multipartFormDataContent = new MultipartFormDataContent();
 
-            multipartFormDataContent.Add(new ByteArrayContent(ms.ToArray()), "file", 
-            Guid.NewGuid().ToString() + ".xlsx");
+            ByteArrayContent fileContent = new ByteArrayContent(ms.ToArray());
+            string fileName = $"{Guid.NewGuid()}.xlsx";
+            multipartFormDataContent.Add(fileContent, "file", fileName);
 
-            var baseUrl = "https://localhost:44328/api/files";
+
+            var baseUrl = "https://localhost:7201/api/files";
 
             using (var httpClient = new HttpClient())
             {
-                var response = await httpClient.PostAsync($"{baseUrl}?fileId={excel.FileId}", multipartFormDataContent);
+
+                var response = await httpClient.PostAsync($"{baseUrl}?fileId={createExcelMessage.FileId}", multipartFormDataContent);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation($"File (Id : {excel.FileId}) was created by successful");
+
+                    _logger.LogInformation($"File ( Id : {createExcelMessage.FileId}) was created by successful");
                     _channel.BasicAck(@event.DeliveryTag, false);
                 }
             }
-            
 
         }
 
-        private DataTable GetTable (string tableName)
+        private DataTable GetTable(string tableName)
         {
-            List<Models.Product> products;
+            List<FileCreateWorkerService.Models.Product> products;
+
             using (var scope = _serviceProvider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AdventureWorks2019Context>();
+
                 products = context.Products.ToList();
             }
 
-            DataTable table = new DataTable { TableName = tableName};
+            DataTable table = new DataTable { TableName = tableName };
 
-            table.Columns.Add("ProductId", typeof(Guid));
-            table.Columns.Add("Name", typeof(string));
+            table.Columns.Add("ProductId", typeof(int));
+            table.Columns.Add("Name", typeof(String));
             table.Columns.Add("ProductNumber", typeof(string));
             table.Columns.Add("Color", typeof(string));
 
-            products.ForEach(p =>
+            products.ForEach(x =>
             {
-                table.Rows.Add(p.ProductId, p.Name, p.ProductNumber, p.Color);
+                table.Rows.Add(x.ProductId, x.Name, x.ProductNumber, x.Color);
+
             });
 
             return table;
+
 
         }
     }
