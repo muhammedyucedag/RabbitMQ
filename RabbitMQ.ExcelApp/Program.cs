@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using RabbitMQ.ExcelApp.Entity;
+using RabbitMQ.ExcelApp.Hubs;
 using RabbitMQ.ExcelApp.Services;
 
 internal class Program
@@ -34,6 +35,8 @@ internal class Program
 
         builder.Services.AddSingleton<RabbitMQClientService>();
         builder.Services.AddSingleton<RabbitMQPublisher>();
+
+        builder.Services.AddSignalR();
 
         var app = builder.Build();
 
@@ -74,12 +77,16 @@ internal class Program
 
         app.UseRouting();
 
+
+
         app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
+
+        app.MapHub<MyHub>("/MyHub");
 
         app.Run();
     }

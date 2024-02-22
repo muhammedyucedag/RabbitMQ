@@ -68,7 +68,6 @@ namespace FileCreateWorkerService
             string fileName = $"{Guid.NewGuid()}.xlsx";
             multipartFormDataContent.Add(fileContent, "file", fileName);
 
-
             var baseUrl = "https://localhost:7201/api/files";
 
             using (var httpClient = new HttpClient())
